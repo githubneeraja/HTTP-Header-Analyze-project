@@ -1,0 +1,367 @@
+{
+  "name": "HTTP Header Analyze",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "={{ $json['Landing page URL'] }}",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "maxRedirects": 5
+            }
+          },
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        224,
+        -16
+      ],
+      "id": "7eeff523-78a7-4acf-a24f-470cea276bb9",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one,\nlet formattedHeaders = '';\nif  (items[0].json.headers)  {\n  for (const key in items[0].json.headers)  {\n    formattedHeaders +=  '${key}: ${items[0].json.headers[key]}\\n';\n  }\n}\n\n// Return both the original data and the formatted headers\nreturn [{\n   json: {\n     ...items[0].json,\n     formattedHeaders:  formattedHeaders,\n     originalHeaders:  items[0].json.headers //  Keep the original headers too\n   }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        -128
+      ],
+      "id": "4808f361-7178-42c2-af6d-a4c1d213a884",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an elite web security expert specializing in secure configurations.\n\nIn this task, you will analyze the HTTP headers, cookies, and overall configuration of a webpage to identify security misconfigurations.\n\nAudit Structure\nYou will begin by listening ALL security headers that are present and properly configured.\n\nBe very clear and explicit about which headers are present and which are missing , and if present, what its valueis.\n\nThen, present your findings in three sections:\n- Header security - Missing or misconfigured  security headers\n- Cookie security - Insecure cookie configurations\n- Content Security - CSP issues, mixed content, etc.\n\nFor each finding, provide:\n1. A clear description of the misconfiguration\n2. The security implications\n3. The recommended secure configuration with example code\n\nIf you find no issues in a particular section, explicitly state that no issues were found.\n\nUse proper formatting with code blocks for configuration examples. Only include issues that can be detected from client-side inspection.  \nHere are the response headers: {{ $json.formattedHeaders }}\n\nPlease respond like this \n\n### [any section heading that includes \"Headers]\n\n1. **[Headers Title]**\n   - **Present?** Yes/No\n   - **Value:** 'actual-header-value'",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        688,
+        -128
+      ],
+      "id": "dd7d96fd-d7d5-4df2-8a36-fd919b1cd789",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        608,
+        48
+      ],
+      "id": "ffef8cba-cd61-4348-92de-4fb279336067",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "1aY5aKMlvNj2tGQd",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an elite Cybersecurity expert specializing in web application security.\n\nIn this task, you will analyze the HTML and visible content of the webpage to identify potential security vulnerabilities.\n\nAudit Structure \nyou will review all client-side security aspects of the page and present your findings in three sections:\n- Critical Vulnerabilities - Issues that could lead to immediate compromise\n- Information Leakage - Sensitive data exposed in page source\n- Client-Side Weaknesses - JavaScript vulnerabilities, XSS opportunities, etc.\n\nFor each issue found, provide:\n1. A clear description of the vulnerability\n2. The potential impact\n3. A specific recommendation to fix it\n\nIf you find no issues in a particular section, explicitly state that no issues were found in that category.\n\nEnsure the output is properly formatted, clean, and highly readable. Focus only on issues that can be detected from the client-side code.\n\nHere is the content of the webpage: {{ $json.data }}\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        560,
+        208
+      ],
+      "id": "0b864655-a620-4a80-a54f-ce42b396731f",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        352,
+        320
+      ],
+      "id": "cce44973-580a-420d-9aa8-e8c2d8e7958e",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "1aY5aKMlvNj2tGQd",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1088,
+        16
+      ],
+      "id": "a8d0dbba-3a06-4de2-8947-36be538461f5",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "output"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1296,
+        16
+      ],
+      "id": "18b8d9b8-f12a-4916-a4a1-a42d8012c0ad",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 🧠 Safe header extraction\nconst configOutput = $json[\"Security Configuration Audit\"] || \"No configuration data\";\nconst vulnOutput = $json[\"Security Vulnerabilities Audit\"] || \"No vulnerability data\";\n\n// Try reading headers safely\nconst rawHeaders = $json[\"rawHeaders\"] || $json[\"headers\"] || {};\nconst headers = Object.fromEntries(\n  Object.entries(rawHeaders).map(([k, v]) => [k.toLowerCase(), v])\n);\n\n// 🛡️ Security grading logic\nfunction gradeSecurity(headers) {\n  let score = 100;\n\n  // Defensive checks\n  if (!headers || Object.keys(headers).length === 0) return \"F\";\n\n  if (!headers[\"content-security-policy\"]) score -= 20;\n  if (!headers[\"strict-transport-security\"]) score -= 20;\n  if (!headers[\"x-content-type-options\"]) score -= 10;\n  if (!headers[\"x-frame-options\"]) score -= 10;\n  if (!headers[\"referrer-policy\"]) score -= 10;\n\n  return score >= 90 ? \"A\" :\n         score >= 75 ? \"B\" :\n         score >= 60 ? \"C\" : \"F\";\n}\n\n// 🧩 Prepare final audit data\nconst auditData = {\n  url: $json[\"url\"] || \"unknown\",\n  grade: gradeSecurity(headers),\n  presentHeaders: Object.keys(headers),\n  configOutput,\n  vulnOutput,\n  timestamp: new Date().toISOString()\n};\n\nreturn [{ json: { auditData } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1504,
+        16
+      ],
+      "id": "c2411d37-dc07-4848-85b4-23dba9418309",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $json.auditData;\n\nconst html = `\n<h2>Website Security Audit Report</h2>\n<p><strong>URL:</strong> ${data.url}</p>\n<p><strong>Grade:</strong> ${data.grade}</p>\n<p><strong>Timestamp:</strong> ${data.timestamp}</p>\n\n<h3>Configuration Audit</h3>\n<pre>${data.configOutput}</pre>\n\n<h3>Vulnerability Audit</h3>\n<pre>${data.vulnOutput}</pre>\n`;\n\nreturn [{ json: { emailHtml: html, auditData: data } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1712,
+        16
+      ],
+      "id": "2643446c-f569-48d7-b043-5a0a9f142ecf",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "sendTo": "neerajab824@gmail.com",
+        "subject": "=Website Security Audit - {{$json.auditData.url}}",
+        "message": "={{$json.emailHtml}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1920,
+        16
+      ],
+      "id": "f49cc017-8dae-45c1-91d9-cf022daac9dd",
+      "name": "Send a message",
+      "webhookId": "99898a5e-d6bb-49bb-a3cb-253b7d437852",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "P191Yp9n2qPxIS5z",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "formTitle": "website security scanner",
+        "formDescription": "Check your website for security Vulnerabilities and get a detailed report. ",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Landing page URL",
+              "placeholder": "http://example.com",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.3,
+      "position": [
+        0,
+        -16
+      ],
+      "id": "6672a706-6a9b-4276-9c1b-5de444253c21",
+      "name": "Landing Page URL",
+      "webhookId": "117557b3-2407-436d-9dd8-9401d065c17e"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Landing Page URL": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "449164b0-b576-4e5a-8887-cb0defd98341",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1d4c213ac2a788b7fdd65e4101de84ff833f73fafdb0206864d0b14f84644412"
+  },
+  "id": "yciF0qfxgFQdxIKf",
+  "tags": []
+}
